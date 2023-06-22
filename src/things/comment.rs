@@ -266,17 +266,20 @@ pub async fn list(client: &Client, config: &Config) -> impl Stream<Item = Commen
 
     stream! {
     let mut last_seen = None;
-
+    let mut page_no = 0;
+    
         loop {
+    
+    page_no += 1;
     let query_params = if let Some(last_seen) = last_seen {
-        format!("?after={last_seen}")
+        format!(";after={last_seen}")
     } else {
         String::new()
     };
 
-    let uri = format!("https://reddit.com/user/{username}/comments.json{query_params}");
+    let uri = format!("https://reddit.com/user/{username}/comments.json?limit=100{query_params}");
 
-            let res: Response = client
+    let res: Response = client
         .get(&uri)
         .header("User-Agent", user_agent.clone())
         .send()
@@ -291,7 +294,8 @@ pub async fn list(client: &Client, config: &Config) -> impl Stream<Item = Commen
 
     let results_len = data.children.len();
 
-    debug!("Page contained {results_len} results");
+    debug!("Page {page_no} contained {results_len} results");
+    sleep(Duration::from_secs(2)).await; // Reddit has a rate limit
 
     if results_len == 0 {
                 break;
