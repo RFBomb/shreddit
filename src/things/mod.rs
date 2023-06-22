@@ -23,11 +23,14 @@ use tracing::instrument;
 use crate::cli::Config;
 use async_trait::async_trait;
 
+const DEBUG_COUNT_PAGES_ONLY:bool = false;
+
 #[async_trait]
 pub trait Shred {
     async fn delete(&self, client: &Client, access_token: &str, config: &Config);
     async fn edit(&self, _client: &Client, _access_token: &str, _config: &Config) {}
     async fn shred(&self, client: &Client, access_token: &str, config: &Config) {
+        if DEBUG_COUNT_PAGES_ONLY { return; }
         self.edit(client, access_token, config).await;
         self.delete(client, access_token, config).await;
     }
@@ -38,9 +41,9 @@ pub async fn shred<T>(thing: T, config: &Config, client: &Client, access_token: 
 where
     T: Shred + Sync + Debug,
 {
+    if DEBUG_COUNT_PAGES_ONLY { return; }
     thing.edit(client, access_token, config).await;
     sleep(Duration::from_secs(2)).await; // Reddit has a rate limit
-
     thing.delete(client, access_token, config).await;
 }
 
